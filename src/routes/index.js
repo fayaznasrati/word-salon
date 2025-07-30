@@ -1,12 +1,10 @@
-import userRoutes from './users';
-import agentsRoutes from './agents';
-import agencyRoutes from './agency';
-import meRoutes from './me';
-import authRoutes from './auth';
-import roleRoutes from './roles';
-import uploadRoutes from './uploads';
-import permissionRoutes from './permissions';
-import imageRoutes from './images';
+import userRoutes from './users/index.js';
+import meRoutes from './me/index.js';
+import authRoutes from './auth/index.js';
+import roleRoutes from './roles/index.js';
+import uploadRoutes from './uploads/index.js';
+import permissionRoutes from './permissions/index.js';
+import imageRoutes from './images/index.js';
 import express from "express";
 
 
@@ -16,8 +14,6 @@ router.use("/", authRoutes);
 router.use("/me", meRoutes);
 router.use("/uploads", uploadRoutes);
 router.use("/users", userRoutes);
-router.use("/agents", agentsRoutes);
-router.use("/agency", agencyRoutes);
 router.use("/roles", roleRoutes);
 router.use("/permissions", permissionRoutes);
 router.use("/public/images", imageRoutes);

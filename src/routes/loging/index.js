@@ -6,7 +6,7 @@ import {
   editLog,
   getLog,
   getLogs,
-} from "../../services/logging/index.js";
+} from "../../controllers/logging/index.js";
 
 const router = express.Router();
 

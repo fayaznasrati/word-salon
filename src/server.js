@@ -6,15 +6,15 @@ import "./passport.js";
 import { dirname } from "path";
 import * as fs from "fs";
 import routes from "./routes/index.js";
-import sequelize from "../config/connection.js"; // Updated: Sequelize connection file
+import sequelize from "./sequelize/index.js"; // Updated: Sequelize connection file
 import path from "path";
 import { ExtractJwt } from "passport-jwt";
 import passportJWT from "passport-jwt";
 import passport from "passport";
 import cron from "node-cron";
-// import ReseedAction from "./sequelize/RessedAction.js"; // Updated: Ensure this file is adapted to Sequelize
 
 const JWTStrategy = passportJWT.Strategy;
+
 
 dotenv.config();
 
@@ -37,7 +37,7 @@ const corsOptions = {
 // Connect to PostgreSQL using Sequelize
 sequelize
   .authenticate()
-  .then(() => console.log("PostgreSQL database connected!"))
+  .then(() => console.log(`✅ Connected to PostgreSQL Write DB: ${process.env.WRITE_DB_HOST} and Read DB: ${process.env.READ_DB_HOST}(with replication)`))
   .catch((err) => console.error("Unable to connect to the database:", err));
 
 app.use(cors(corsOptions));
@@ -50,11 +50,6 @@ app.get("/", function (req, res) {
 app.use("/api/v1", routes);
 
 
-if (process.env.SCHEDULE_HOUR) {
-  cron.schedule(`0 */${process.env.SCHEDULE_HOUR} * * *`, () => {
-    // ReseedAction(); // Ensure this function is refactored to use Sequelize models
-  });
-}
 
 app.listen(PORT, () =>
   console.log(`Server listening to port http://localhost:${PORT}`)

@@ -1,5 +1,5 @@
 import { DataTypes } from "sequelize";
-import sequelize from "../config/connection.js";
+import sequelize from "../src/sequelize/index.js"; 
 import Roles from "./role.model.js"; // Ensure the Roles model exists
 import Permissions from "./permissions.model.js"; // Ensure the Permissions model exists
 

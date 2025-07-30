@@ -1,6 +1,6 @@
 "use strict";
 import { DataTypes, Model } from "sequelize";
-import sequelize from "../config/connection.js";
+import sequelize from "../src/sequelize/index.js"; 
 
 class Logging extends Model {}
 

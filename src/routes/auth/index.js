@@ -4,12 +4,12 @@ import {
   loginRouteHandler,
   registerRouteHandler,
   resetPasswordRouteHandler,
-} from "../../services/auth/index.js";
+} from "../../controllers/auth/index.js";
 
 const router = express.Router();
 
 router.post("/login", async (req, res, next) => {
-  console.log("req.body",req.body)
+  console.log("req.body", req.body)
   try {
     const { email, password } = req.body;
     await loginRouteHandler(req, res, email, password);
@@ -29,7 +29,7 @@ router.post("/register", async (req, res, next) => {
   } catch (error) {
     next(error);
   }
- });
+});
 
 router.post("/password-forgot", async (req, res, next) => {
   try {

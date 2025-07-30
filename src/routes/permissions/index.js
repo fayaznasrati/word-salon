@@ -1,13 +1,13 @@
 import express from "express";
 import passport from "passport";
 import jwt from 'jsonwebtoken';
-import { getProfileRouteHandler, patchProfileRouteHandler } from "../../services/me";
-import { getPermissionsRoute } from "../../services/permissions";
+import { getProfileRouteHandler, patchProfileRouteHandler } from "../../controllers/me/index.js";
+import { getPermissionsRoute } from "../../controllers/permissions/index.js";
 
 const router = express.Router();
 
 // get user's profile
-router.get("/", passport.authenticate('jwt',{session: false}), (req, res) => {
+router.get("/", passport.authenticate('jwt', { session: false }), (req, res) => {
   try {
     getProfileRouteHandler(req, res);
   } catch (error) {
@@ -16,7 +16,7 @@ router.get("/", passport.authenticate('jwt',{session: false}), (req, res) => {
 });
 
 // update user's profile
-router.patch("/", passport.authenticate('jwt',{session: false}), async (req, res) => {
+router.patch("/", passport.authenticate('jwt', { session: false }), async (req, res) => {
   try {
     await patchProfileRouteHandler(req, res);
   } catch (error) {
@@ -25,7 +25,7 @@ router.patch("/", passport.authenticate('jwt',{session: false}), async (req, res
 });
 
 // get permissions
-router.get("/permissions", passport.authenticate('jwt',{session: false}), async (req, res) => {
+router.get("/permissions", passport.authenticate('jwt', { session: false }), async (req, res) => {
   try {
     await getPermissionsRoute(req, res);
   } catch (error) {
