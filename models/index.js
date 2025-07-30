@@ -1,43 +1,42 @@
-'use strict';
+import { readdirSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath, pathToFileURL } from 'url';
+import sequelize from '../src/sequelize/index.js';
 
-const fs = require('fs');
-const path = require('path');
-const Sequelize = require('sequelize');
-const process = require('process');
-const basename = path.basename(__filename);
-const env = process.env.NODE_ENV || 'development';
-const config = require(__dirname + '/../config/config.json')[env];
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 const db = {};
 
-let sequelize;
-if (config.use_env_variable) {
-  sequelize = new Sequelize(process.env[config.use_env_variable], config);
-} else {
-  sequelize = new Sequelize(config.database, config.username, config.password, config);
+// Read all model files except this index.js
+const modelFiles = readdirSync(__dirname)
+  .filter(
+    (file) =>
+      file !== 'index.js' &&
+      file.endsWith('.js') &&
+      !file.includes('.test.')
+  );
+
+for (const file of modelFiles) {
+  const modelModule = await import(pathToFileURL(join(__dirname, file)).href);
+  const model = modelModule.default;
+
+  if (!model?.name) {
+    console.warn(`Skipping invalid model in file ${file}`);
+    continue;
+  }
+
+  db[model.name] = model;
 }
 
-fs
-  .readdirSync(__dirname)
-  .filter(file => {
-    return (
-      file.indexOf('.') !== 0 &&
-      file !== basename &&
-      file.slice(-3) === '.js' &&
-      file.indexOf('.test.js') === -1
-    );
-  })
-  .forEach(file => {
-    const model = require(path.join(__dirname, file))(sequelize, Sequelize.DataTypes);
-    db[model.name] = model;
-  });
-
-Object.keys(db).forEach(modelName => {
-  if (db[modelName].associate) {
+// If models have associations, run them
+Object.keys(db).forEach((modelName) => {
+  if (typeof db[modelName].associate === 'function') {
     db[modelName].associate(db);
   }
 });
 
+// Add sequelize instance to db object
 db.sequelize = sequelize;
-db.Sequelize = Sequelize;
 
-module.exports = db;
+export default db;

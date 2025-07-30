@@ -3,9 +3,8 @@ import nodemailer from "nodemailer";
 import randomToken from "random-token";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import User from "../../../models/user.model.js";
-import Role from "../../../models/role.model.js";
-
+import db from '../../../models/index.js';
+const { user } = db;
 dotenv.config();
 
 const transporter = nodemailer.createTransport({
@@ -17,10 +16,11 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-export const loginRouteHandler = async (req, res, email, password) => {
+export const loginRouteHandler = async (req, res) => {
   try {
-    const foundUser = await User.findOne({ where: { email } });
-    if (!foundUser) {
+    const { email, password } = req.body
+    const founduser = await user.findOne({ where: { email } });
+    if (!founduser) {
       return res.status(400).json({
         errors: [
           {
@@ -31,10 +31,10 @@ export const loginRouteHandler = async (req, res, email, password) => {
       });
     }
 
-    const validPassword = await bcrypt.compare(password, foundUser.password);
+    const validPassword = await bcrypt.compare(password, founduser.password_hash);
     if (validPassword) {
       const token = jwt.sign(
-        { id: foundUser.id, email: foundUser.email },
+        { id: founduser.id, email: founduser.email },
         process.env.JWT_SECRET,
         {
           expiresIn: "1h",
@@ -56,35 +56,31 @@ export const loginRouteHandler = async (req, res, email, password) => {
   }
 };
 
-export const registerRouteHandler = async (req, res, name, email, password) => {
-  try {
-    const foundUser = await User.findOne({ where: { email } });
-    if (foundUser) {
-      return res.status(400).json({ message: "The email is already in use" });
-    }
+export const logoutRouteHandler = async (req, res) => {
+  return res.sendStatus(204); // Just a dummy logout for JWT-based auth
+};
 
-    if (!password || password.length < 8) {
-      return res
-        .status(400)
-        .json({ message: "The password must be at least 8 characters long." });
+export const registerRouteHandler = async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+
+    const founduser = await user.findOne({ where: { email } });
+    if (founduser) {
+      return res.status(400).json({ message: "The email is already in use" });
     }
 
     const salt = await bcrypt.genSalt(10);
     const hashPassword = await bcrypt.hash(password, salt);
-
-    const adminRole = await Role.findOne({ where: { name: "admin" } });
-
-    const newUser = await User.create({
+    const newuser = await user.create({
       name,
       email,
-      password: hashPassword,
-      role: adminRole ? adminRole.id : null,
+      password_hash: hashPassword,
       created_at: new Date(),
-      updated_at: new Date(), 
+      updated_at: new Date(),
     });
 
     const token = jwt.sign(
-      { id: newUser.id, email: newUser.email },
+      { id: newuser.id, email: newuser.email },
       process.env.JWT_SECRET,
       {
         expiresIn: "1h",
@@ -96,7 +92,7 @@ export const registerRouteHandler = async (req, res, name, email, password) => {
       expires_in: "1h",
       access_token: token,
       refresh_token: token,
-      
+
     });
   } catch (error) {
     return res.status(500).json({ error: error.message });
@@ -105,9 +101,9 @@ export const registerRouteHandler = async (req, res, name, email, password) => {
 
 export const forgotPasswordRouteHandler = async (req, res, email) => {
   try {
-    const foundUser = await User.findOne({ where: { email } });
+    const founduser = await user.findOne({ where: { email } });
 
-    if (!foundUser) {
+    if (!founduser) {
       return res.status(400).json({
         errors: { email: ["The email does not match any existing user."] },
       });
@@ -137,9 +133,9 @@ export const forgotPasswordRouteHandler = async (req, res, email) => {
 
 export const resetPasswordRouteHandler = async (req, res) => {
   try {
-    const foundUser = await User.findOne({ where: { email: req.body.data.attributes.email } });
+    const founduser = await user.findOne({ where: { email: req.body.data.attributes.email } });
 
-    if (!foundUser) {
+    if (!founduser) {
       return res.status(400).json({
         errors: { email: ["The email does not match any existing user."] },
       });
@@ -166,7 +162,7 @@ export const resetPasswordRouteHandler = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashPassword = await bcrypt.hash(password, salt);
 
-    await User.update({ password: hashPassword }, { where: { email: foundUser.email } });
+    await user.update({ password: hashPassword }, { where: { email: founduser.email } });
 
     return res.sendStatus(204);
   } catch (error) {

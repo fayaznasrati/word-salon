@@ -24,13 +24,14 @@ const sequelize = new Sequelize({
     max: 20,
     idle: 30000,
   },
-  logging: false,
+  logging: process.env.NODE_ENV === 'development' ? console.log : false,
 });
 
 export const dbConnect = async () => {
   try {
     await sequelize.authenticate();
-    console.log(`✅ Connected to PostgreSQL Write DB: ${process.env.WRITE_DB_HOST} and Read DB: ${process.env.READ_DB_HOST}(with replication)`);
+    await sequelize.sync({ alter: process.env.NODE_ENV === 'development' });
+    console.log(`✅ Connected to PostgreSQL with replication`);
   } catch (err) {
     console.error("❌ PostgreSQL connection failed:", err.message);
     process.exit(1);

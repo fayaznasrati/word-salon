@@ -1,51 +1,32 @@
+// export default router;
 import express from "express";
 import {
-  forgotPasswordRouteHandler,
-  loginRouteHandler,
   registerRouteHandler,
+  loginRouteHandler,
+  forgotPasswordRouteHandler,
   resetPasswordRouteHandler,
+  logoutRouteHandler,
 } from "../../controllers/auth/index.js";
+
+import awaitHandlerFactory from "../../middleware/awaitHandlerFactory.middleware.js";
+import authenticateJWT from "../../middleware/authenticateJWT.js";
+import {
+  registerValidator,
+  loginValidator,
+  forgotPasswordValidator,
+  resetPasswordValidator,
+} from "../../middleware/validators/authValidator.middleware.js";
 
 const router = express.Router();
 
-router.post("/login", async (req, res, next) => {
-  console.log("req.body", req.body)
-  try {
-    const { email, password } = req.body;
-    await loginRouteHandler(req, res, email, password);
-  } catch (error) {
-    next(error);
-  }
-});
+router.post("/register", registerValidator, awaitHandlerFactory(registerRouteHandler));
 
-router.post("/logout", (req, res) => {
-  return res.sendStatus(204);
-});
+router.post("/login", loginValidator, awaitHandlerFactory(loginRouteHandler));
 
-router.post("/register", async (req, res, next) => {
-  try {
-    const { name, email, password } = req.body;
-    await registerRouteHandler(req, res, name, email, password);
-  } catch (error) {
-    next(error);
-  }
-});
+router.post("/logout", authenticateJWT, awaitHandlerFactory(logoutRouteHandler));
 
-router.post("/password-forgot", async (req, res, next) => {
-  try {
-    const { email } = req.body;
-    await forgotPasswordRouteHandler(req, res, email);
-  } catch (error) {
-    next(error);
-  }
-});
+router.post("/password-forgot", forgotPasswordValidator, awaitHandlerFactory(forgotPasswordRouteHandler));
 
-router.post("/password-reset", async (req, res, next) => {
-  try {
-    await resetPasswordRouteHandler(req, res);
-  } catch (error) {
-    next(error);
-  }
-});
+router.post("/password-reset", resetPasswordValidator, awaitHandlerFactory(resetPasswordRouteHandler));
 
 export default router;

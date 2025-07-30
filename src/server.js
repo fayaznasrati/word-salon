@@ -21,7 +21,9 @@ dotenv.config();
 const PORT = process.env.PORT || 8080;
 const app = express();
 app.use(express.json());
-
+app.use(passport.initialize());
+// Serve static files from the "uploads" directory
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 const whitelist = [process.env.APP_URL_CLIENT];
 const corsOptions = {
   origin: function (origin, callback) {
