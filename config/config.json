@@ -1,0 +1,24 @@
+{
+  "development": {
+    "username": "postgres",
+    "password": "F1a2y3z4321",
+    "database": "mybusdb",
+    "host": "localhost",
+    "dialect": "postgres",  
+    "port": 5432            
+  },
+  "test": {
+    "username": "root",
+    "password": null,
+    "database": "database_test",
+    "host": "127.0.0.1",
+    "dialect": "mysql"
+  },
+  "production": {
+    "username": "root",
+    "password": null,
+    "database": "database_production",
+    "host": "127.0.0.1",
+    "dialect": "mysql"
+  }
+}
