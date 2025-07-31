@@ -25,14 +25,17 @@ const Event = sequelize.define('Event', {
     type: DataTypes.DATE,
     allowNull: false,
     validate: {
-      isAfter: new Date().toISOString()
+      isAfter: {
+        args: new Date().toISOString(),
+        msg: 'Start date must be in the future'
+      }
     }
   },
   endDateTime: {
     type: DataTypes.DATE,
     allowNull: false,
     validate: {
-      isAfter: function(value) {
+      isAfter: function (value) {
         if (value <= this.startDateTime) {
           throw new Error('End date must be after start date');
         }
@@ -55,6 +58,7 @@ const Event = sequelize.define('Event', {
     allowNull: false
   }
 }, {
+  tableName: 'events', // explicitly set the table name
   timestamps: true,
   paranoid: true,
   indexes: [
@@ -83,9 +87,9 @@ const Event = sequelize.define('Event', {
 // ======================
 // ASSOCIATIONS
 // ======================
-Event.associate = function(models) {
-        console.log('event associate models on Event.model:', Object.keys(models));
-  
+Event.associate = function (models) {
+  console.log('event associate models on Event.model:', Object.keys(models));
+
   if (!models.User) throw new Error('User model not found');
   if (!models.Invitation) throw new Error('Invitation model not found');
 
@@ -93,12 +97,12 @@ Event.associate = function(models) {
     foreignKey: 'createdBy',
     as: 'organizer'
   });
-  
+
   Event.hasMany(models.Invitation, {
     foreignKey: 'eventId',
     as: 'invitations'
   });
-  
+
   Event.belongsToMany(models.User, {
     through: models.Invitation,
     foreignKey: 'eventId',

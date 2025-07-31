@@ -1,17 +1,22 @@
 import express from 'express';
-import { createEvent, respondToInvitation, getEventWithResponses } from '../controllers/eventController.js';
-import authMiddleware from '../middlewares/authMiddleware.js';
-import adminMiddleware from '../middlewares/adminMiddleware.js';
+import { createEvent,getAllEvents } from '../../controllers/event/index.js';
+import authenticateJWT from "../../middleware/authenticateJWT.js";
+import {
+  createEventValidator,  
+  updateEventValidator,
+} from "../../middleware/validators/eventValidator.middleware.js";
 
+import awaitHandlerFactory from "../../middleware/awaitHandlerFactory.middleware.js";
 const router = express.Router();
 
 // Admin creates event and sends invitations
-router.post('/', authMiddleware, adminMiddleware, createEvent);
+router.post('/', authenticateJWT, createEventValidator,  awaitHandlerFactory(createEvent));
+router.get('/', authenticateJWT,   awaitHandlerFactory(getAllEvents));
 
-// User responds to invitation
-router.post('/:eventId/respond', authMiddleware, respondToInvitation);
+// // User responds to invitation
+// router.post('/:eventId/respond', authenticateJWT, awaitHandlerFactory(respondToInvitation));
 
-// Get event details with RSVP statuses
-router.get('/:eventId', authMiddleware, getEventWithResponses);
+// // Get event details with RSVP statuses
+// router.get('/:eventId', authenticateJWT, awaitHandlerFactory(getEventWithResponses));
 
 export default router;

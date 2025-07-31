@@ -1,116 +1,120 @@
-import { Event, Invitation, User } from '../models/index.js';
-import nodemailer from 'nodemailer';
-import { v4 as uuidv4 } from 'uuid';
 
-// Email transporter setup
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD,
-  },
-});
+import sequelize from '../../sequelize/index.js';
+import { v4 as uuidv4 } from 'uuid';
+import db from '../../../models/index.js';
+const { Event, User} = db;
+
+
+// Helper: Mock Zoom link generator
+const generateZoomLink = async (startDateTime,endDateTime) => {
+  const meetingId = Math.random().toString(36).substring(2, 10);
+  return `https://zoom.us/j/${meetingId}?pwd=${startDateTime}-${endDateTime}`;
+}
 
 export const createEvent = async (req, res) => {
+  const transaction = await sequelize.transaction(); // Start transaction
+
   try {
-    const { topic, description, startDateTime, endDateTime, zoomLink, invitees } = req.body;
+    const { 
+      topic, 
+      description, 
+      startDateTime, 
+      endDateTime, 
+    } = req.body;
     
-    // Create the event
+    const finalZoomLink = await generateZoomLink(startDateTime,endDateTime);
+
     const event = await Event.create({
+      id: uuidv4(),
       topic,
       description,
       startDateTime,
       endDateTime,
-      zoomLink,
+      zoomLink: finalZoomLink,
+      status: 'UPCOMING',
       createdBy: req.user.id
+    }, { transaction });
+    await transaction.commit();
+    return res.status(201).json({
+      success: true,
+      event: {
+        ...event.get({ plain: true }),
+      }
     });
 
-    // Create invitations and send emails
-    const invitations = await Promise.all(invitees.map(async (userId) => {
-      const invitation = await Invitation.create({
-        eventId: event.id,
-        userId,
-      });
-      
-      const user = await User.findByPk(userId);
-      const responseToken = uuidv4();
-      
-      // In a real app, store this token in the database with expiration
-      const responseLink = `${process.env.FRONTEND_URL}/rsvp?token=${responseToken}&invitation=${invitation.id}`;
-      
-      await transporter.sendMail({
-        from: `"Event Portal" <${process.env.EMAIL_USER}>`,
-        to: user.email,
-        subject: `Invitation: ${event.topic}`,
-        html: `
-          <h1>You're invited to ${event.topic}</h1>
-          <p>${event.description}</p>
-          <p><strong>When:</strong> ${new Date(event.startDateTime).toLocaleString()}</p>
-          <p><strong>Zoom Link:</strong> <a href="${event.zoomLink}">Join Meeting</a></p>
-          <div>
-            <a href="${responseLink}&response=ACCEPTED" style="background: green; color: white; padding: 10px; margin: 5px; text-decoration: none;">Accept</a>
-            <a href="${responseLink}&response=DECLINED" style="background: red; color: white; padding: 10px; margin: 5px; text-decoration: none;">Decline</a>
-            <a href="${responseLink}&response=MAYBE" style="background: orange; color: white; padding: 10px; margin: 5px; text-decoration: none;">Maybe</a>
-          </div>
-        `,
-      });
-      
-      return invitation;
-    }));
-
-    res.status(201).json({ event, invitations });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+  }  catch (error) {
+  await transaction.rollback();
+    console.error("Error creating event:", error);
+    res.status(500).json({ 
+      success: false,
+      error: "Failed to creating events",
+      details: error.message 
+    });
+}
 };
 
-export const respondToInvitation = async (req, res) => {
+export const getAllEvents = async (req, res) => {
   try {
-    const { invitationId, response } = req.body;
-    
-    const invitation = await Invitation.findByPk(invitationId);
-    if (!invitation) {
-      return res.status(404).json({ error: 'Invitation not found' });
+    // Get pagination parameters from query (default to page 1, 10 items per page)
+    const page = parseInt(req.query.page) || 1;
+    const pageSize = parseInt(req.query.pageSize) || 10;
+    const offset = (page - 1) * pageSize;
+
+    // Get sorting parameters
+    const sortBy = req.query.sortBy || 'startDateTime';
+    const sortOrder = req.query.sortOrder || 'ASC';
+
+    // Build where clause for optional filtering
+    const where = {};
+    if (req.query.status) {
+      where.status = req.query.status;
     }
-    
-    invitation.status = response;
-    invitation.responseDate = new Date();
-    await invitation.save();
-    
-    res.json({ message: 'Response recorded', invitation });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
+    if (req.query.fromDate) {
+      where.startDateTime = {
+        [Op.gte]: new Date(req.query.fromDate)
+      };
+    }
+    if (req.query.toDate) {
+      where.endDateTime = {
+        [Op.lte]: new Date(req.query.toDate)
+      };
+    }
 
-export const getEventWithResponses = async (req, res) => {
-  try {
-    const { eventId } = req.params;
-    
-    const event = await Event.findByPk(eventId, {
+    // Query the database
+    const { count, rows: events } = await Event.findAndCountAll({
+      where,
+      limit: pageSize,
+      offset,
+      order: [[sortBy, sortOrder]],
       include: [
         {
           model: User,
-          as: 'organizer',
-          attributes: ['id', 'name', 'email']
-        },
-        {
-          model: User,
-          through: {
-            model: Invitation,
-            attributes: ['status', 'responseDate']
-          },
-          attributes: ['id', 'name', 'email']
+          as: 'creator',
+          attributes: ['id', 'firstName', 'lastName', 'email']
         }
       ]
     });
-    
-    if (!event) {
-      return res.status(404).json({ error: 'Event not found' });
-    }
-    
-    res.json(event);
+
+    // Calculate total pages
+    const totalPages = Math.ceil(count / pageSize);
+
+    return res.status(200).json({
+      success: true,
+      data: events,
+      pagination: {
+        totalItems: count,
+        totalPages,
+        currentPage: page,
+        pageSize
+      }
+    });
+
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Error fetching events:", error);
+    res.status(500).json({ 
+      success: false,
+      error: "Failed to fetch events",
+      details: error.message 
+    });
   }
 };
