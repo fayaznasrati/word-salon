@@ -94,7 +94,7 @@ export const getAllEvents = async (req, res) => {
         }
       ]
     });
-
+  //  asdf
     // Calculate total pages
     const totalPages = Math.ceil(count / pageSize);
 
