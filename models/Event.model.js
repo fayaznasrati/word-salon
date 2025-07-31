@@ -1,4 +1,4 @@
-import { DataTypes } from "sequelize";
+import { DataTypes, Op, } from "sequelize";
 import sequelize from '../src/sequelize/index.js';
 
 const Event = sequelize.define('Event', {

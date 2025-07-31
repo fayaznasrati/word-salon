@@ -1,5 +1,5 @@
 import express from 'express';
-import { createEvent,getAllEvents } from '../../controllers/event/index.js';
+import { createEvent,getAllEvents,getMyEvents } from '../../controllers/event/index.js';
 import authenticateJWT from "../../middleware/authenticateJWT.js";
 import {
   createEventValidator,  
@@ -12,6 +12,7 @@ const router = express.Router();
 // Admin creates event and sends invitations
 router.post('/', authenticateJWT, createEventValidator,  awaitHandlerFactory(createEvent));
 router.get('/', authenticateJWT,   awaitHandlerFactory(getAllEvents));
+router.get('/my-events', authenticateJWT,   awaitHandlerFactory(getMyEvents));
 
 // // User responds to invitation
 // router.post('/:eventId/respond', authenticateJWT, awaitHandlerFactory(respondToInvitation));

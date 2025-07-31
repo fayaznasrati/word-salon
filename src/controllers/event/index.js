@@ -1,5 +1,6 @@
-
+import { DataTypes, Op, } from "sequelize";
 import sequelize from '../../sequelize/index.js';
+
 import { v4 as uuidv4 } from 'uuid';
 import db from '../../../models/index.js';
 const { Event, User} = db;
@@ -53,8 +54,62 @@ export const createEvent = async (req, res) => {
 }
 };
 
+
 export const getAllEvents = async (req, res) => {
   try {
+    const page = parseInt(req.query.page) || 1;
+    const pageSize = parseInt(req.query.pageSize) || 10;
+    const offset = (page - 1) * pageSize;
+    const sortBy = req.query.sortBy || 'startDateTime';
+    const sortOrder = req.query.sortOrder || 'ASC';
+
+    const where = {};
+    if (req.query.status) where.status = req.query.status;
+    if (req.query.fromDate) where.startDateTime = { [Op.gte]: new Date(req.query.fromDate) };
+    if (req.query.toDate) where.endDateTime = { [Op.lte]: new Date(req.query.toDate) };
+
+    const { count, rows: events } = await Event.findAndCountAll({
+      where,
+      limit: pageSize,
+      offset,
+      order: [[sortBy, sortOrder]],
+      include: [
+        {
+          model: User,
+          as: 'organizer', // This must match your Event model association
+          attributes: ['id', 'name', 'phone', 'email']
+        }
+      ]
+    });
+
+    const totalPages = Math.ceil(count / pageSize);
+
+    return res.status(200).json({
+      success: true,
+      data: events,
+      pagination: {
+        totalItems: count,
+        totalPages,
+        currentPage: page,
+        pageSize
+      }
+    });
+
+  } catch (error) {
+    console.error("Error fetching events:", error);
+    res.status(500).json({ 
+      success: false,
+      error: "Failed to fetch events",
+      details: error.message 
+    });
+  }
+};
+
+export const getMyEvents = async (req, res) => {
+  try {
+    // Get the authenticated user's ID
+    const userId = req.user.id;
+
     // Get pagination parameters from query (default to page 1, 10 items per page)
     const page = parseInt(req.query.page) || 1;
     const pageSize = parseInt(req.query.pageSize) || 10;
@@ -64,8 +119,13 @@ export const getAllEvents = async (req, res) => {
     const sortBy = req.query.sortBy || 'startDateTime';
     const sortOrder = req.query.sortOrder || 'ASC';
 
-    // Build where clause for optional filtering
-    const where = {};
+    // Build where clause for filtering
+    const where = {
+      [Op.or]: [
+        { createdBy: userId }, // Events created by the user
+      ]
+    };
+
     if (req.query.status) {
       where.status = req.query.status;
     }
@@ -89,12 +149,13 @@ export const getAllEvents = async (req, res) => {
       include: [
         {
           model: User,
-          as: 'creator',
-          attributes: ['id', 'firstName', 'lastName', 'email']
+          as: 'organizer',
+          attributes: ['id', 'name', 'email']
         }
-      ]
+      ],
+      distinct: true // Important for correct count when using includes
     });
-  // 
+
     // Calculate total pages
     const totalPages = Math.ceil(count / pageSize);
 
@@ -110,10 +171,10 @@ export const getAllEvents = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Error fetching events:", error);
+    console.error("Error fetching user events:", error);
     res.status(500).json({ 
       success: false,
-      error: "Failed to fetch events",
+      error: "Failed to fetch user events",
       details: error.message 
     });
   }
