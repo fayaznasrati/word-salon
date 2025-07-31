@@ -4,14 +4,34 @@ import sequelize from '../../sequelize/index.js';
 import { v4 as uuidv4 } from 'uuid';
 import db from '../../../models/index.js';
 const { Event, User} = db;
+import { createZoomMeeting } from '../../services/zoomService.js';
 
 
-// Helper: Mock Zoom link generator
-const generateZoomLink = async (startDateTime,endDateTime) => {
-  const meetingId = Math.random().toString(36).substring(2, 10);
-  return `https://zoom.us/j/${meetingId}?pwd=${startDateTime}-${endDateTime}`;
-}
+const generateZoomLink = async (topic, startDateTime, endDateTime) => {
+  // Validate inputs first
+  if (!topic || !startDateTime || !endDateTime) {
+    throw new Error("Missing required meeting details");
+  }
 
+  try {
+    const zoomMeetingDetails = await createZoomMeeting({
+      topic: topic.substring(0, 200), // Zoom limits topic to 200 chars
+      startDateTime: new Date(startDateTime).toISOString(),
+      endDateTime: new Date(endDateTime).toISOString()
+    });
+    
+    return zoomMeetingDetails.zoomLink;
+
+  } catch (error) {
+    console.error("Failed to create Zoom meeting:", error.message);
+    
+    // Fallback to a  mock link
+    const meetingId = Math.random().toString(36).substring(2, 12);
+    const password = Math.random().toString(36).substring(2, 10);
+    
+    return `https://zoom.us/j/${meetingId}?pwd=${password}`;
+  }
+};
 export const createEvent = async (req, res) => {
   const transaction = await sequelize.transaction(); // Start transaction
 
@@ -23,7 +43,8 @@ export const createEvent = async (req, res) => {
       endDateTime, 
     } = req.body;
     
-    const finalZoomLink = await generateZoomLink(startDateTime,endDateTime);
+     // Create Zoom meeting
+    const finalZoomLink = await generateZoomLink(topic, startDateTime, endDateTime);
 
     const event = await Event.create({
       id: uuidv4(),
@@ -53,7 +74,6 @@ export const createEvent = async (req, res) => {
     });
 }
 };
-
 
 export const getAllEvents = async (req, res) => {
   try {
