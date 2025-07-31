@@ -24,12 +24,18 @@ app.use(express.json());
 app.use(passport.initialize());
 // Serve static files from the "uploads" directory
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
-const whitelist = [process.env.APP_URL_CLIENT];
+const whitelist = [
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  process.env.APP_URL_CLIENT, // Keep this if you're using env
+];
+
 const corsOptions = {
   origin: function (origin, callback) {
-    if (!origin || whitelist.indexOf(origin) !== -1) {
+    if (!origin || whitelist.includes(origin)) {
       callback(null, true);
     } else {
+      console.log("❌ Blocked by CORS:", origin);
       callback(new Error("Not allowed by CORS"));
     }
   },
