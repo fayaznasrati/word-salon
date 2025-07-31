@@ -18,15 +18,19 @@ const modelFiles = readdirSync(__dirname)
   );
 
 for (const file of modelFiles) {
-  const modelModule = await import(pathToFileURL(join(__dirname, file)).href);
-  const model = modelModule.default;
-
-  if (!model?.name) {
-    console.warn(`Skipping invalid model in file ${file}`);
-    continue;
+  try {
+    const modelModule = await import(pathToFileURL(join(__dirname, file)).href);
+    console.log(`Successfully loaded: ${file}`);
+    const model = modelModule.default;
+    if (!model?.name) {
+      console.warn(`⚠️ Model in ${file} has no name`);
+      continue;
+    }
+    db[model.name] = model;
+  } catch (err) {
+    console.error(`❌ Failed to load ${file}:`, err);
+    throw err;
   }
-
-  db[model.name] = model;
 }
 
 // If models have associations, run them

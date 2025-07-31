@@ -16,7 +16,6 @@ export const updateProfileValidator = [
     .withMessage('name maximum limit is 50 words'),
   body("mobile").optional().isMobilePhone().withMessage("Valid phone number required"),
   body("bio").optional().isString().isLength({ max: 500 }),
-  body("photo").optional().isURL().withMessage("Photo must be a valid URL"),
 ];
 
 export const updatePasswordValidator = [

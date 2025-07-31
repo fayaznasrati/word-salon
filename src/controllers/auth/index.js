@@ -4,7 +4,8 @@ import randomToken from "random-token";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import db from '../../../models/index.js';
-const { user } = db;
+import { Op, fn, col, where }  from "sequelize";
+const { User } = db;
 dotenv.config();
 
 const transporter = nodemailer.createTransport({
@@ -19,7 +20,7 @@ const transporter = nodemailer.createTransport({
 export const loginRouteHandler = async (req, res) => {
   try {
     const { email, password } = req.body
-    const founduser = await user.findOne({ where: { email } });
+    const founduser = await User.scope('withPassword').findOne({ where: { email } });
     if (!founduser) {
       return res.status(400).json({
         errors: [
@@ -44,7 +45,6 @@ export const loginRouteHandler = async (req, res) => {
         token_type: "Bearer",
         expires_in: "1h",
         access_token: token,
-        refresh_token: token,
       });
     } else {
       return res.status(400).json({
@@ -64,14 +64,14 @@ export const registerRouteHandler = async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
-    const founduser = await user.findOne({ where: { email } });
+    const founduser = await User.findOne({ where: { email } });
     if (founduser) {
       return res.status(400).json({ message: "The email is already in use" });
     }
 
     const salt = await bcrypt.genSalt(10);
     const hashPassword = await bcrypt.hash(password, salt);
-    const newuser = await user.create({
+    const newuser = await User.create({
       name,
       email,
       password_hash: hashPassword,
@@ -91,7 +91,6 @@ export const registerRouteHandler = async (req, res) => {
       token_type: "Bearer",
       expires_in: "1h",
       access_token: token,
-      refresh_token: token,
 
     });
   } catch (error) {
@@ -101,7 +100,7 @@ export const registerRouteHandler = async (req, res) => {
 
 export const forgotPasswordRouteHandler = async (req, res, email) => {
   try {
-    const founduser = await user.findOne({ where: { email } });
+    const founduser = await User.findOne({ where: { email } });
 
     if (!founduser) {
       return res.status(400).json({
@@ -112,7 +111,7 @@ export const forgotPasswordRouteHandler = async (req, res, email) => {
     const token = randomToken(20);
 
     await transporter.sendMail({
-      from: "admin@jsonapi.com",
+      from: "forgotPassword@world-salon.com",
       to: email,
       subject: "Reset Password",
       html: `<p>You requested to change your password. If this request was not made by you, please contact us. Access <a href='${process.env.APP_URL_CLIENT}/auth/reset-password?token=${token}&email=${email}'>this link</a> to reset your password.</p>`,
@@ -133,7 +132,7 @@ export const forgotPasswordRouteHandler = async (req, res, email) => {
 
 export const resetPasswordRouteHandler = async (req, res) => {
   try {
-    const founduser = await user.findOne({ where: { email: req.body.data.attributes.email } });
+    const founduser = await User.findOne({ where: { email: req.body.data.attributes.email } });
 
     if (!founduser) {
       return res.status(400).json({
@@ -162,7 +161,7 @@ export const resetPasswordRouteHandler = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashPassword = await bcrypt.hash(password, salt);
 
-    await user.update({ password: hashPassword }, { where: { email: founduser.email } });
+    await User.update({ password: hashPassword }, { where: { email: founduser.email } });
 
     return res.sendStatus(204);
   } catch (error) {

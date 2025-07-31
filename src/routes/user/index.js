@@ -18,8 +18,6 @@ router.get("/me", authenticateJWT, awaitHandlerFactory(getMyProfile));
 
 router.patch("/me/update", authenticateJWT, updateProfileValidator,uploadPhoto, awaitHandlerFactory(updateMyProfile));
 
-
-// router.patch("/me/update", authenticateJWT, uploadPhoto, updateMyProfile);
 router.patch("/me/password", authenticateJWT, updatePasswordValidator, awaitHandlerFactory(updateMyPassword));
 
 export default router;

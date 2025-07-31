@@ -7,19 +7,19 @@ export const getMyProfile = async (req, res) => {
   if (!req.user) {
     return res.status(401).json({ error: "Not authenticated" });
   }
-  const { id, name, email, mobile, bio, photo, created_at, update_at } = req.user;
-  res.json({ id, name, email, mobile, bio, photo, created_at, update_at });
+  const { id, name, email, phone, bio, photo_url, created_at, update_at } = req.user;
+  res.json({ id, name, email, phone, bio, photo_url, created_at, update_at });
 };
 
 // PATCH /me/update
 export const updateMyProfile = async (req, res) => {
   try {
-    const { name, mobile, bio } = req.body;
+    const { name, phone, bio } = req.body;
     const updates = {};
 
     // Update text fields if provided
     if (name !== undefined) updates.name = name;
-    if (mobile !== undefined) updates.mobile = mobile;
+    if (phone !== undefined) updates.phone = phone;
     if (bio !== undefined) updates.bio = bio;
 
     // If a new photo was uploaded
@@ -39,10 +39,11 @@ export const updateMyProfile = async (req, res) => {
 
       // Save the new photo path (relative to uploads folder)
       updates.photo_url = `/uploads/profile-photos/${req.file.filename}`;
+
+
     }
 
     updates.updated_at = new Date();
-
     // Update the user in the database
     await req.user.update(updates);
 

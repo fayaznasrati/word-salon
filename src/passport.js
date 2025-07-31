@@ -3,7 +3,7 @@ import passportJWT from "passport-jwt";
 import dotenv from "dotenv";
 import passport from "passport";
 import db from '../models/index.js';
-const { user } = db;
+const { User } = db;
 dotenv.config();
 const JWTStrategy = passportJWT.Strategy;
 
@@ -15,7 +15,7 @@ passport.use(
     },
     async (jwtPayload, done) => {
       try {
-        const theUser = await user.findByPk(jwtPayload.id); // ✅ Sequelize method
+        const theUser = await User.findByPk(jwtPayload.id); // ✅ Sequelize method
         if (!theUser) return done(null, false);
         return done(null, theUser);
       } catch (err) {
