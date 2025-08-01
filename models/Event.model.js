@@ -50,7 +50,7 @@ const Event = sequelize.define('Event', {
     }
   },
   status: {
-    type: DataTypes.ENUM('UPCOMING', 'ONGOING', 'COMPLETED', 'CANCELLED'),
+    type:  DataTypes.STRING,
     defaultValue: 'UPCOMING'
   },
   createdBy: {
@@ -88,7 +88,7 @@ const Event = sequelize.define('Event', {
 // ASSOCIATIONS
 // ======================
 Event.associate = function (models) {
-  console.log('event associate models on Event.model:', Object.keys(models));
+  // console.log('event associate models on Event.model:', Object.keys(models));
 
   if (!models.User) throw new Error('User model not found');
   if (!models.Invitation) throw new Error('Invitation model not found');

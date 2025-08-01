@@ -4,7 +4,8 @@ import randomToken from "random-token";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import db from '../../../models/index.js';
-import { Op, fn, col, where }  from "sequelize";
+import { Op, fn, col, where } from "sequelize";
+import { validationResult } from "express-validator";
 const { User } = db;
 dotenv.config();
 
@@ -19,6 +20,12 @@ const transporter = nodemailer.createTransport({
 
 export const loginRouteHandler = async (req, res) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    console.log('login/loginRouteHandler', JSON.stringify(req.body), JSON.stringify(req.query))
+
     const { email, password } = req.body
     const founduser = await User.scope('withPassword').findOne({ where: { email } });
     if (!founduser) {
@@ -62,6 +69,11 @@ export const logoutRouteHandler = async (req, res) => {
 
 export const registerRouteHandler = async (req, res) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    console.log('registration/registerRouteHandler', JSON.stringify(req.body), JSON.stringify(req.query))
     const { name, email, password } = req.body;
 
     const founduser = await User.findOne({ where: { email } });

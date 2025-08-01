@@ -14,10 +14,5 @@ router.post('/', authenticateJWT, createEventValidator,  awaitHandlerFactory(cre
 router.get('/', authenticateJWT,   awaitHandlerFactory(getAllEvents));
 router.get('/my-events', authenticateJWT,   awaitHandlerFactory(getMyEvents));
 
-// // User responds to invitation
-// router.post('/:eventId/respond', authenticateJWT, awaitHandlerFactory(respondToInvitation));
-
-// // Get event details with RSVP statuses
-// router.get('/:eventId', authenticateJWT, awaitHandlerFactory(getEventWithResponses));
 
 export default router;

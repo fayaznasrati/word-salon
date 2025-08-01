@@ -2,17 +2,7 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    // ======================
-    // 1. ENUM & TABLE CREATION
-    // ======================
-    await queryInterface.sequelize.query(`
-      CREATE TYPE "enum_events_status" AS ENUM (
-        'UPCOMING', 
-        'ONGOING', 
-        'COMPLETED', 
-        'CANCELLED'
-      );
-    `);
+
 
     await queryInterface.createTable('events', {
       id: {
@@ -42,7 +32,7 @@ module.exports = {
         allowNull: false
       },
       status: {
-        type: 'enum_events_status',
+        type:  Sequelize.STRING(20),
         defaultValue: 'UPCOMING',
         allowNull: false
       },

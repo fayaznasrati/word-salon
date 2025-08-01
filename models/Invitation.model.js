@@ -48,7 +48,7 @@ const Invitation = sequelize.define('Invitation', {
 // ASSOCIATIONS
 // ======================
 Invitation.associate = function (models) {
-    console.log('Invitation associate models on user.model:', Object.keys(models));
+    // console.log('Invitation associate models on user.model:', Object.keys(models));
     if (!models.User) throw new Error('User model not found');
     if (!models.Event) throw new Error('Event model not found');
 

@@ -1,4 +1,5 @@
 import bcrypt from "bcrypt";
+import { validationResult } from "express-validator";
 import fs from "fs/promises"; // Use fs.promises for async file operations
 import path from "path";
 
@@ -14,6 +15,12 @@ export const getMyProfile = async (req, res) => {
 // PATCH /me/update
 export const updateMyProfile = async (req, res) => {
   try {
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    console.log('User/updateMyProfile', JSON.stringify(req.body), JSON.stringify(req.query))
     const { name, phone, bio } = req.body;
     const updates = {};
 
@@ -66,6 +73,11 @@ export const updateMyProfile = async (req, res) => {
 // PATCH /me/password
 export const updateMyPassword = async (req, res) => {
   try {
+     const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    console.log('User/updateMyPassword', JSON.stringify(req.body), JSON.stringify(req.query))
     const { currentPassword, newPassword } = req.body;
 
     // 1. Check if currentPassword matches the stored hash

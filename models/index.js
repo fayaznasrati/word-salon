@@ -20,7 +20,7 @@ const modelFiles = readdirSync(__dirname)
 for (const file of modelFiles) {
   try {
     const modelModule = await import(pathToFileURL(join(__dirname, file)).href);
-    console.log(`Successfully loaded: ${file}`);
+    // console.log(`Successfully loaded: ${file}`);
     const model = modelModule.default;
     if (!model?.name) {
       console.warn(`⚠️ Model in ${file} has no name`);

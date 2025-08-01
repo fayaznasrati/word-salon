@@ -36,9 +36,6 @@ export const createEventValidator = [
     .isIn(['UPCOMING', 'ONGOING', 'COMPLETED', 'CANCELLED'])
     .withMessage('Invalid status value'),
 
-  body('createdBy')
-    .exists().withMessage('Creator ID is required')
-    .isUUID().withMessage('Creator ID must be a valid UUID')
 ];
 
 export const updateEventValidator = [

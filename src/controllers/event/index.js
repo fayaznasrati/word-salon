@@ -3,8 +3,9 @@ import sequelize from '../../sequelize/index.js';
 
 import { v4 as uuidv4 } from 'uuid';
 import db from '../../../models/index.js';
-const { Event, User} = db;
+const { Event, User } = db;
 import { createZoomMeeting } from '../../services/zoomService.js';
+import { validationResult } from "express-validator";
 
 
 const generateZoomLink = async (topic, startDateTime, endDateTime) => {
@@ -19,16 +20,16 @@ const generateZoomLink = async (topic, startDateTime, endDateTime) => {
       startDateTime: new Date(startDateTime).toISOString(),
       endDateTime: new Date(endDateTime).toISOString()
     });
-    
+
     return zoomMeetingDetails.zoomLink;
 
   } catch (error) {
     console.error("Failed to create Zoom meeting:", error.message);
-    
+
     // Fallback to a  mock link
     const meetingId = Math.random().toString(36).substring(2, 12);
     const password = Math.random().toString(36).substring(2, 10);
-    
+
     return `https://zoom.us/j/${meetingId}?pwd=${password}`;
   }
 };
@@ -36,15 +37,25 @@ export const createEvent = async (req, res) => {
   const transaction = await sequelize.transaction(); // Start transaction
 
   try {
-    const { 
-      topic, 
-      description, 
-      startDateTime, 
-      endDateTime, 
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    console.log('event/createEvent', JSON.stringify(req.body), JSON.stringify(req.query))
+
+    const {
+      topic,
+      description,
+      startDateTime,
+      endDateTime,
+      status
     } = req.body;
-    
-     // Create Zoom meeting
-    const finalZoomLink = await generateZoomLink(topic, startDateTime, endDateTime);
+
+    // Create Zoom meeting due to not having an payed plan can create zoom lin, so we use the mock
+    // const finalZoomLink = await generateZoomLink(topic, startDateTime, endDateTime);
+    const password= "XYZ!@#"
+    const meetingId= "ABC123"
+    const finalZoomLink = `https://zoom.us/j/${meetingId}?pwd=${password}`
 
     const event = await Event.create({
       id: uuidv4(),
@@ -53,7 +64,7 @@ export const createEvent = async (req, res) => {
       startDateTime,
       endDateTime,
       zoomLink: finalZoomLink,
-      status: 'UPCOMING',
+      status,
       createdBy: req.user.id
     }, { transaction });
     await transaction.commit();
@@ -64,24 +75,31 @@ export const createEvent = async (req, res) => {
       }
     });
 
-  }  catch (error) {
-  await transaction.rollback();
+  } catch (error) {
+    await transaction.rollback();
     console.error("Error creating event:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       error: "Failed to creating events",
-      details: error.message 
+      details: error.message
     });
-}
+  }
 };
 
 export const getAllEvents = async (req, res) => {
   try {
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    console.log('event/getAllEvents', JSON.stringify(req.body), JSON.stringify(req.query))
+
     const page = parseInt(req.query.page) || 1;
-    const pageSize = parseInt(req.query.pageSize) || 10;
+    const pageSize = parseInt(req.query.pageSize) || 20;
     const offset = (page - 1) * pageSize;
-    const sortBy = req.query.sortBy || 'startDateTime';
-    const sortOrder = req.query.sortOrder || 'ASC';
+    const sortBy = req.query.sortBy || 'createdAt';
+    const sortOrder = req.query.sortOrder || 'DESC';
 
     const where = {};
     if (req.query.status) where.status = req.query.status;
@@ -117,16 +135,21 @@ export const getAllEvents = async (req, res) => {
 
   } catch (error) {
     console.error("Error fetching events:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       error: "Failed to fetch events",
-      details: error.message 
+      details: error.message
     });
   }
 };
 
 export const getMyEvents = async (req, res) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    console.log('event/getMyEvents', JSON.stringify(req.body), JSON.stringify(req.query))
     // Get the authenticated user's ID
     const userId = req.user.id;
 
@@ -192,10 +215,10 @@ export const getMyEvents = async (req, res) => {
 
   } catch (error) {
     console.error("Error fetching user events:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       error: "Failed to fetch user events",
-      details: error.message 
+      details: error.message
     });
   }
 };
